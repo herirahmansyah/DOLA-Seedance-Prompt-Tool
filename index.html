@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Generator prompt video terstruktur untuk Seedance: shot, subjek, kamera, cahaya, gaya, audio, dan spesifikasi output.">
+<title>DOLA · Seedance Prompt Generator</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header>
+  <h1>DOLA · SEEDANCE <span>PROMPT GENERATOR</span></h1>
+  <p class="sub">Susun prompt video terstruktur (shot → subjek → kamera → cahaya → gaya → audio → spesifikasi output). Tulis isian bebas dalam Bahasa Inggris agar hasil model lebih maksimal.</p>
+</header>
+
+<main>
+  <!-- ============ FORM ============ -->
+  <section class="panel">
+    <h2>Konfigurasi Prompt</h2>
+
+    <div class="grid" id="selectGrid"></div>
+
+    <div class="free">
+      <div class="field wide">
+        <label for="subject">Subjek Utama</label>
+        <input id="subject" placeholder="a young woman in a red raincoat">
+      </div>
+      <div class="field wide">
+        <label for="action">Aksi / Gerakan Subjek</label>
+        <input id="action" placeholder="slowly turns her head toward the camera, rain dripping from her hood">
+      </div>
+      <div class="field wide">
+        <label for="environment">Latar / Environment</label>
+        <input id="environment" placeholder="a neon-lit alley in Tokyo at night">
+      </div>
+      <div class="field wide">
+        <label for="extra">Detail Tambahan (opsional)</label>
+        <input id="extra" placeholder="wet asphalt reflections, steam rising, shallow focus">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="btnGen">⚡ Generate Prompt</button>
+      <button id="btnRandom">🎲 Randomize</button>
+      <button id="btnReset">↺ Reset</button>
+    </div>
+
+    <div class="actions">
+      <button id="btnShare">🔗 Share Link</button>
+      <button id="btnExport">⬇ Export JSON</button>
+      <button id="btnImport">⬆ Import JSON</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
+
+    <p class="hint">Tips: gabungkan <em>shot size</em> + <em>movement</em> + <em>lighting</em> yang saling mendukung. Untuk video pendek (5–8s), gunakan satu gerakan kamera saja. State bisa dibagikan lewat <strong>Share Link</strong> atau disimpan sebagai file lewat <strong>Export JSON</strong>.</p>
+  </section>
+
+  <!-- ============ OUTPUT + HISTORY ============ -->
+  <div class="col">
+    <section class="panel">
+      <div class="out-head">
+        <h2>Hasil Prompt</h2>
+        <span class="counter" id="counter">0 karakter</span>
+      </div>
+
+      <label class="mini" for="output">Prompt Utama</label>
+      <textarea id="output" readonly placeholder="Klik ⚡ Generate Prompt…"></textarea>
+
+      <label class="mini" for="compact">Versi Ringkas (one-liner)</label>
+      <textarea id="compact" readonly></textarea>
+
+      <label class="mini" for="negative">Negative Prompt</label>
+      <textarea id="negative"></textarea>
+
+      <div class="out-actions">
+        <button class="primary" id="copyMain">📋 Copy Prompt</button>
+        <button id="copyAll">📦 Copy Semua</button>
+        <button id="download">⬇ Download .txt</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="out-head">
+        <h2>History</h2>
+        <button class="btn-sm danger" id="histClearAll" type="button">Bersihkan</button>
+      </div>
+      <div class="hist-list" id="historyList"></div>
+    </section>
+  </div>
+
+  <!-- ============ PRESET MANAGER ============ -->
+  <section class="panel panel-wide">
+    <h2>Preset Manager</h2>
+
+    <div class="preset-row">
+      <div class="field">
+        <label for="preset">Preset Gaya</label>
+        <select id="preset"></select>
+      </div>
+      <button id="btnPreset">Terapkan</button>
+      <button id="btnDeletePreset" class="danger" type="button" disabled>Hapus Preset</button>
+    </div>
+
+    <div class="preset-row">
+      <div class="field">
+        <label for="presetName">Simpan preset custom</label>
+        <input id="presetName" maxlength="40" placeholder="mis. Adegan Pagi Saya">
+      </div>
+      <button id="btnSavePreset">💾 Simpan Konfigurasi Ini</button>
+    </div>
+
+    <p class="preset-note">Preset bawaan hanya bisa diterapkan. Konfigurasi yang Anda simpan (termasuk isian bebas & negative prompt) tersimpan di localStorage browser dan muncul dengan label <em>(custom)</em>.</p>
+  </section>
+</main>
+
+<div id="toast"></div>
+
+<script src="assets/js/presets.js"></script>
+<script src="assets/js/generator.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
