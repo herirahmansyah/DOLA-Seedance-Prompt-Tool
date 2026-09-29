@@ -381,6 +381,114 @@
     reader.readAsText(file);
   }
 
+  /* ---------------------------- Shot Breakdown ---------------------------- */
+
+  /* Buat satu field (label + input/select) untuk panel breakdown. */
+  function makeShotField(labelText, type, id, opt) {
+    const wrap = document.createElement('div');
+    wrap.className = 'field';
+    const lab = document.createElement('label');
+    lab.setAttribute('for', id);
+    lab.textContent = labelText;
+
+    let control;
+    if (type === 'select') {
+      control = document.createElement('select');
+      opt.options.forEach((o) => {
+        const op = document.createElement('option');
+        op.value = o;
+        op.textContent = o;
+        control.appendChild(op);
+      });
+      if (opt.value && Array.from(control.options).some((o) => o.value === opt.value)) {
+        control.value = opt.value;
+      }
+    } else {
+      control = document.createElement('input');
+      control.type = 'text';
+      control.value = opt.value || '';
+      if (opt.placeholder) control.placeholder = opt.placeholder;
+    }
+    control.id = id;
+    control.addEventListener(type === 'select' ? 'change' : 'input', () => gen().build());
+
+    wrap.append(lab, control);
+    return wrap;
+  }
+
+  /* Kumpulkan nilai field per-klip yang sedang tampil agar tidak hilang
+     saat panel dirender ulang (mis. ganti dari 2 ke 3 klip). */
+  function collectShotFields() {
+    const map = {};
+    for (let n = 1; n <= D().MAX_CLIPS; n++) {
+      const a = $('shot' + n + '_action');
+      if (!a) continue;
+      const g = $('shot' + n + '_dialog');
+      const m = $('shot' + n + '_movement');
+      const d = $('shot' + n + '_duration');
+      map[n] = {
+        action: a.value,
+        dialog: g ? g.value : '',
+        movement: m ? m.value : '',
+        duration: d ? d.value : ''
+      };
+    }
+    return map;
+  }
+
+  /* Render panel Shot Breakdown sesuai shot mode terpilih.
+     Mode 1 -> panel disembunyikan, mode 2-4 -> tampil N sub-panel klip. */
+  function renderShotBreakdown() {
+    const box = $('shotBreakdown');
+    if (!box) return;
+    const prev = collectShotFields();
+    const mode = gen().getShotMode();
+    box.textContent = '';
+    box.classList.toggle('open', mode > 1);
+    if (mode === 1) return;
+
+    const title = document.createElement('div');
+    title.className = 'shot-header';
+    title.textContent = 'Shot Breakdown (per klip)';
+    box.appendChild(title);
+
+    const globalMovement = $('sel_movement')
+      ? $('sel_movement').value
+      : D().SELECTS.movement.opts[0];
+
+    for (let n = 1; n <= mode; n++) {
+      const old = prev[n] || {};
+      const panel = document.createElement('div');
+      panel.className = 'shot-panel';
+
+      const head = document.createElement('div');
+      head.className = 'shot-header';
+      head.textContent = '🎬 SHOT ' + n + ' (mulai ' + ((n - 1) * 15) + 's)';
+      panel.appendChild(head);
+
+      const fields = document.createElement('div');
+      fields.className = 'shot-fields';
+      fields.appendChild(makeShotField('Aksi', 'input', 'shot' + n + '_action', {
+        value: old.action,
+        placeholder: 'greets the viewer with a warm smile'
+      }));
+      fields.appendChild(makeShotField('Dialog', 'input', 'shot' + n + '_dialog', {
+        value: old.dialog,
+        placeholder: 'Dialog untuk klip ini (opsional)'
+      }));
+      fields.appendChild(makeShotField('Camera Movement', 'select', 'shot' + n + '_movement', {
+        options: D().SELECTS.movement.opts,
+        value: old.movement || globalMovement
+      }));
+      fields.appendChild(makeShotField('Duration', 'select', 'shot' + n + '_duration', {
+        options: D().SHOT_DURATIONS,
+        value: old.duration || '15s'
+      }));
+      panel.appendChild(fields);
+      box.appendChild(panel);
+    }
+  }
+
   /* ----------------------------- Event UI ----------------------------- */
 
   /* Pasang seluruh event listener tombol dan input. */
@@ -416,6 +524,12 @@
       $(id).addEventListener('input', () => gen().build());
     });
     $('negative').addEventListener('input', () => gen().updateCounter());
+
+    // Shot mode -> render panel breakdown + bangun ulang prompt
+    $('shotMode').addEventListener('change', () => {
+      renderShotBreakdown();
+      gen().build();
+    });
 
     $('copyMain').addEventListener('click', () => copyText($('output').value, 'Prompt tersalin 📋'));
     $('copyAll').addEventListener('click', () => copyText(fullText(), 'Semua bagian tersalin 📦'));
@@ -453,6 +567,7 @@
     buildSelectGrid();
     renderPresetOptions();
     bindEvents();
+    renderShotBreakdown();
     $('negative').value = D().DEFAULT_NEG;
     const shared = tryLoadShare();
     if (!shared) gen().build();

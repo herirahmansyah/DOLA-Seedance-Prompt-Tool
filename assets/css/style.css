@@ -165,3 +165,34 @@ button:disabled{opacity:.4;cursor:not-allowed;transform:none;border-color:var(--
 
 /* Info kecil di Preset Manager */
 .preset-note{font-size:11.5px;color:var(--muted);margin:2px 0 0;line-height:1.6}
+
+/* ==========================================================================
+   Tambahan: panel Shot Breakdown (multi-shot storyboard)
+   ========================================================================== */
+
+/* Container disembunyikan secara default; dibuka lewat class .open */
+#shotBreakdown{
+  display:none;
+  margin-top:16px;
+  padding-top:14px;
+  border-top:1px solid var(--line);
+}
+#shotBreakdown.open{display:block}
+
+/* Sub-panel per klip: garis aksen di kiri */
+.shot-panel{
+  border-left:3px solid var(--accent);
+  padding-left:12px;
+  margin-bottom:14px;
+}
+.shot-header{
+  font-weight:600;
+  color:var(--accent);
+  margin-bottom:8px;
+}
+.shot-fields{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+}
+@media(max-width:520px){.shot-fields{grid-template-columns:1fr}}
