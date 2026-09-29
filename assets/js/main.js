@@ -165,7 +165,10 @@
       environment: typeof p.environment === 'string' ? p.environment : '',
       extra: typeof p.extra === 'string' ? p.extra : '',
       dialog: typeof p.dialog === 'string' ? p.dialog : '',
-      negative: typeof p.negative === 'string' ? p.negative : D().DEFAULT_NEG
+      negative: typeof p.negative === 'string' ? p.negative : D().DEFAULT_NEG,
+      // Preset lama tidak punya shotMode -> pertahankan mode yang sedang aktif.
+      shotMode: typeof p.shotMode === 'number' ? p.shotMode : gen().getShotMode(),
+      shots: Array.isArray(p.shots) ? p.shots : undefined
     };
   }
 
@@ -237,6 +240,10 @@
   function makePreview(state) {
     const subject = (state.subject || '').trim() || '(tanpa subjek)';
     const s = state.sel || {};
+    if (typeof state.shotMode === 'number' && state.shotMode > 1) {
+      const env = (state.environment || '').trim();
+      return state.shotMode + ' clips · ' + subject + (env ? ' · ' + env : '');
+    }
     return subject + ' · ' + (s.shotSize || '') + ' · ' + (s.duration || '');
   }
 
@@ -513,6 +520,8 @@
     $('btnReset').addEventListener('click', () => {
       D().ORDER.forEach((k) => { $('sel_' + k).selectedIndex = 0; });
       ['subject', 'action', 'environment', 'extra', 'dialog'].forEach((id) => { $(id).value = ''; });
+      $('shotMode').value = '1';
+      renderShotBreakdown();
       $('output').value = '';
       $('compact').value = '';
       $('negative').value = D().DEFAULT_NEG;

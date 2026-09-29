@@ -46,6 +46,15 @@
   /* Durasi yang valid untuk tiap klip multi-shot (Seedance maks 15 detik). */
   const SHOT_DURATIONS = ['8s', '10s', '15s'];
 
+  /* Fallback per-klip untuk state multi-shot yang belum punya data shots
+     (state lama / share link / file JSON lama). */
+  const DEFAULT_SHOTS = [
+    { action: '', dialog: '', movement: 'static locked-off shot', duration: '15s' },
+    { action: '', dialog: '', movement: 'static locked-off shot', duration: '15s' },
+    { action: '', dialog: '', movement: 'static locked-off shot', duration: '15s' },
+    { action: '', dialog: '', movement: 'static locked-off shot', duration: '15s' }
+  ];
+
   /* Negative prompt bawaan (dipakai saat reset / load state tanpa negative). */
   const DEFAULT_NEG = 'blurry, low resolution, distorted anatomy, extra fingers, extra limbs, warped face, watermark, logo, text overlay, subtitles, jittery motion, flickering frames, oversaturated colors, plastic skin, duplicated subject';
 
@@ -80,5 +89,5 @@
   /* Batas ukuran file JSON yang diimpor (byte). */
   const IMPORT_MAX_BYTES = 200 * 1024;
 
-  window.DOLA.data = { SELECTS, ORDER, SHOT_MODES, MAX_CLIPS, SHOT_DURATIONS, PRESETS, RAND, DEFAULT_NEG, STORAGE, HISTORY_MAX, IMPORT_MAX_BYTES };
+  window.DOLA.data = { SELECTS, ORDER, SHOT_MODES, MAX_CLIPS, SHOT_DURATIONS, DEFAULT_SHOTS, PRESETS, RAND, DEFAULT_NEG, STORAGE, HISTORY_MAX, IMPORT_MAX_BYTES };
 })();

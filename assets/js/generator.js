@@ -18,6 +18,24 @@
   /* Pilih satu item acak dari array. */
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
+  /* Baca state semua field per-klip (mode multi-shot) dari form. */
+  function readShots(clipCount) {
+    const data = D();
+    const shots = [];
+    for (let n = 1; n <= clipCount; n++) {
+      const def = data.DEFAULT_SHOTS[(n - 1) % data.DEFAULT_SHOTS.length];
+      const mv = shotField(n, 'movement', def.movement);
+      const du = shotField(n, 'duration', def.duration);
+      shots.push({
+        action: shotField(n, 'action', def.action),
+        dialog: shotField(n, 'dialog', def.dialog),
+        movement: data.SELECTS.movement.opts.includes(mv) ? mv : def.movement,
+        duration: data.SHOT_DURATIONS.includes(du) ? du : def.duration
+      });
+    }
+    return shots;
+  }
+
   /* Baca seluruh state form menjadi satu objek serializable. */
   function getState() {
     const sel = {};
@@ -29,14 +47,17 @@
       const el = $(id);
       return el ? String(el.value) : '';
     };
+    const shotMode = getShotMode();
     return {
       v: 1,
+      shotMode,
       sel,
       subject: text('subject'),
       action: text('action'),
       environment: text('environment'),
       extra: text('extra'),
       dialog: text('dialog'),
+      shots: readShots(shotMode),
       negative: text('negative')
     };
   }
@@ -55,16 +76,47 @@
       sel[k] = val && opts.includes(val) ? val : opts[0];
     });
     const str = (key, def) => (typeof raw[key] === 'string' ? raw[key] : def);
+
+    // shotMode: wajib 1-4; state lama tanpa shotMode jatuh ke 1 (single shot).
+    const modeNum = typeof raw.shotMode === 'number' && Number.isFinite(raw.shotMode)
+      ? Math.round(raw.shotMode)
+      : (typeof raw.shotMode === 'string' && /^\s*\d+\s*$/.test(raw.shotMode) ? parseInt(raw.shotMode, 10) : NaN);
+    const shotMode = data.SHOT_MODES.some((m) => m.value === modeNum) ? modeNum : 1;
+    const clipCount = data.SHOT_MODES.find((m) => m.value === shotMode).clipCount;
+
     return {
       v: 1,
+      shotMode,
       sel,
       subject: str('subject', ''),
       action: str('action', ''),
       environment: str('environment', ''),
       extra: str('extra', ''),
       dialog: str('dialog', ''),
+      shots: normalizeShots(raw.shots, clipCount),
       negative: str('negative', data.DEFAULT_NEG)
     };
+  }
+
+  /* Normalisasi daftar shots: panjang mengikuti jumlah klip dan tiap field
+     divalidasi; nilai tidak valid jatuh ke DEFAULT_SHOTS. */
+  function normalizeShots(rawShots, clipCount) {
+    const data = D();
+    const arr = Array.isArray(rawShots) ? rawShots : [];
+    const out = [];
+    for (let i = 0; i < clipCount; i++) {
+      const def = data.DEFAULT_SHOTS[i % data.DEFAULT_SHOTS.length];
+      const s = arr[i] && typeof arr[i] === 'object' && !Array.isArray(arr[i]) ? arr[i] : {};
+      out.push({
+        action: typeof s.action === 'string' ? s.action : def.action,
+        dialog: typeof s.dialog === 'string' ? s.dialog : def.dialog,
+        movement: typeof s.movement === 'string' && data.SELECTS.movement.opts.includes(s.movement)
+          ? s.movement : def.movement,
+        duration: typeof s.duration === 'string' && data.SHOT_DURATIONS.includes(s.duration)
+          ? s.duration : def.duration
+      });
+    }
+    return out;
   }
 
   /* Terapkan state valid ke form; mengembalikan true bila berhasil. */
@@ -79,6 +131,23 @@
       const el = $(id);
       if (el) el.value = st[id];
     });
+
+    // Shot mode: ganti nilai lalu render ulang panel breakdown (listener di
+    // main.js), baru isi field per-klip dengan nilai yang dipulihkan.
+    const modeEl = $('shotMode');
+    if (modeEl) {
+      modeEl.value = String(st.shotMode);
+      modeEl.dispatchEvent(new Event('change'));
+      for (let n = 1; n <= st.shotMode; n++) {
+        const s = st.shots[n - 1];
+        [['action', s.action], ['dialog', s.dialog], ['movement', s.movement], ['duration', s.duration]]
+          .forEach(([key, val]) => {
+            const el = $('shot' + n + '_' + key);
+            if (el) el.value = val;
+          });
+      }
+    }
+
     build();
     return true;
   }
@@ -115,7 +184,10 @@
     const L = [];
     if (o.lead) L.push(o.lead);
     L.push(cap(v.shotSize) + ' at ' + v.angle + ', shot on a ' + v.lens + '.');
-    L.push(cap(o.subject) + (o.action ? ' ' + o.action : '') + (o.env ? ', set in ' + o.env : '') + '.');
+    // Subjek yang diakhiri elipsis ("...,") disambung dengan koma, seperti
+    // referensi output: "RARA, a beautiful Indonesian woman..., <aksi>".
+    const subjJoin = o.subject.endsWith('...') ? ', ' : ' ';
+    L.push(cap(o.subject) + (o.action ? subjJoin + o.action : '') + (o.env ? ', set in ' + o.env : '') + '.');
     L.push('Camera: ' + o.movement + '.');
     L.push('Lighting: ' + v.lighting + '. Color grade: ' + v.color + '. Mood: ' + v.mood + '.');
     L.push('Style: ' + v.style + (o.extra ? '. Details: ' + o.extra : '') + '.');
