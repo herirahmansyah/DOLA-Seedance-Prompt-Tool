@@ -36,6 +36,7 @@
       action: text('action'),
       environment: text('environment'),
       extra: text('extra'),
+      dialog: text('dialog'),
       negative: text('negative')
     };
   }
@@ -61,6 +62,7 @@
       action: str('action', ''),
       environment: str('environment', ''),
       extra: str('extra', ''),
+      dialog: str('dialog', ''),
       negative: str('negative', data.DEFAULT_NEG)
     };
   }
@@ -73,7 +75,7 @@
       const el = $('sel_' + k);
       if (el) el.value = st.sel[k];
     });
-    ['subject', 'action', 'environment', 'extra', 'negative'].forEach((id) => {
+    ['subject', 'action', 'environment', 'extra', 'dialog', 'negative'].forEach((id) => {
       const el = $(id);
       if (el) el.value = st[id];
     });
@@ -90,6 +92,10 @@
     const action = st.action.trim();
     const env = st.environment.trim();
     const extra = st.extra.trim();
+    const dialog = st.dialog.trim();
+    // Dialog memaksa audio "dialogue with room tone" hanya untuk output prompt;
+    // nilai audio pilihan pengguna tidak diubah di form.
+    const audio = dialog ? 'dialogue with room tone' : v.audio;
 
     const L = [];
     L.push(cap(v.shotSize) + ' at ' + v.angle + ', shot on a ' + v.lens + '.');
@@ -97,7 +103,8 @@
     L.push('Camera: ' + v.movement + '.');
     L.push('Lighting: ' + v.lighting + '. Color grade: ' + v.color + '. Mood: ' + v.mood + '.');
     L.push('Style: ' + v.style + (extra ? '. Details: ' + extra : '') + '.');
-    L.push('Audio: ' + v.audio + '.');
+    L.push('Audio: ' + audio + '.');
+    if (dialog) L.push('Dialogue (spoken in Indonesian): "' + dialog + '"');
     L.push('Output: ' + v.duration + ', ' + v.ratio + ', ' + v.resolution + ', ' + v.fps + '.');
 
     $('output').value = L.join('\n');
@@ -107,7 +114,8 @@
       (action ? ', ' + action : '') +
       (env ? ', ' + env : '') + ' — ' + v.movement +
       ', ' + v.lighting + ', ' + v.style +
-      ', ' + v.color + ', ' + v.ratio + ' ' + v.duration + '.';
+      ', ' + v.color + ', ' + v.ratio + ' ' + v.duration +
+      (dialog ? ", speaking: '" + dialog + "'" : '') + '.';
 
     updateCounter();
   }

@@ -79,6 +79,12 @@ textarea{resize:vertical;line-height:1.55}
 .free{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
 @media(max-width:520px){.free{grid-template-columns:1fr}}
 .free .wide{grid-column:1/-1}
+.field-note{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:4px;
+  line-height:1.4;
+}
 .preset-row{display:flex;gap:10px;margin-bottom:14px;align-items:flex-end;flex-wrap:wrap}
 .preset-row .field{flex:1;min-width:180px}
 button{

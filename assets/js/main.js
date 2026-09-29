@@ -164,6 +164,7 @@
       action: typeof p.action === 'string' ? p.action : '',
       environment: typeof p.environment === 'string' ? p.environment : '',
       extra: typeof p.extra === 'string' ? p.extra : '',
+      dialog: typeof p.dialog === 'string' ? p.dialog : '',
       negative: typeof p.negative === 'string' ? p.negative : D().DEFAULT_NEG
     };
   }
@@ -403,7 +404,7 @@
 
     $('btnReset').addEventListener('click', () => {
       D().ORDER.forEach((k) => { $('sel_' + k).selectedIndex = 0; });
-      ['subject', 'action', 'environment', 'extra'].forEach((id) => { $(id).value = ''; });
+      ['subject', 'action', 'environment', 'extra', 'dialog'].forEach((id) => { $(id).value = ''; });
       $('output').value = '';
       $('compact').value = '';
       $('negative').value = D().DEFAULT_NEG;
@@ -411,7 +412,7 @@
       toast('Direset');
     });
 
-    ['subject', 'action', 'environment', 'extra'].forEach((id) => {
+    ['subject', 'action', 'environment', 'extra', 'dialog'].forEach((id) => {
       $(id).addEventListener('input', () => gen().build());
     });
     $('negative').addEventListener('input', () => gen().updateCounter());
