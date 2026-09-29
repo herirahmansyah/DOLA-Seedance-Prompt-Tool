@@ -83,8 +83,127 @@
     return true;
   }
 
+  /* Batas detik per klip pada mode multi-shot (Seedance maks 15 detik). */
+  const CLIP_SECONDS = 15;
+
+  /* Pembuka kontinuitas untuk prompt klip ke-2 dan seterusnya. */
+  const CONTINUITY_CUE =
+    'Continuing seamlessly from the previous scene, same character, same location, same lighting:';
+
+  /* Baca nilai integer shot mode (1-4) dari #shotMode; fallback ke 1. */
+  function getShotMode() {
+    const el = $('shotMode');
+    const n = el ? parseInt(el.value, 10) : NaN;
+    const found = D().SHOT_MODES.find((m) => m.value === n);
+    return found ? found.value : 1;
+  }
+
+  /* Baca satu field per-klip (shot<n>_<key>); kembalikan def bila elemennya
+     belum ada (panel breakdown belum dirender / mode single shot). */
+  function shotField(n, key, def) {
+    const el = $('shot' + n + '_' + key);
+    return el ? String(el.value) : def;
+  }
+
+  /* Susun baris prompt utama dari gabungan field global + field klip. */
+  function composePrompt(o) {
+    const v = o.v;
+    // Dialog memaksa audio "dialogue with room tone" hanya untuk output prompt;
+    // nilai audio pilihan pengguna tidak diubah di form.
+    const audio = o.dialog ? 'dialogue with room tone' : v.audio;
+
+    const L = [];
+    if (o.lead) L.push(o.lead);
+    L.push(cap(v.shotSize) + ' at ' + v.angle + ', shot on a ' + v.lens + '.');
+    L.push(cap(o.subject) + (o.action ? ' ' + o.action : '') + (o.env ? ', set in ' + o.env : '') + '.');
+    L.push('Camera: ' + o.movement + '.');
+    L.push('Lighting: ' + v.lighting + '. Color grade: ' + v.color + '. Mood: ' + v.mood + '.');
+    L.push('Style: ' + v.style + (o.extra ? '. Details: ' + o.extra : '') + '.');
+    L.push('Audio: ' + audio + '.');
+    if (o.dialog) L.push('Dialogue (spoken in Indonesian): "' + o.dialog + '"');
+    L.push('Output: ' + o.duration + ', ' + v.ratio + ', ' + v.resolution + ', ' + v.fps + '.');
+    return L.join('\n');
+  }
+
+  /* Susun versi ringkas satu baris. */
+  function composeCompact(o) {
+    const v = o.v;
+    return (o.prefix || '') +
+      cap(v.shotSize) + ' of ' + o.subject +
+      (o.action ? ', ' + o.action : '') +
+      (o.env ? ', ' + o.env : '') + ' — ' + o.movement +
+      ', ' + v.lighting + ', ' + v.style +
+      ', ' + v.color + ', ' + v.ratio + ' ' + o.duration +
+      (o.dialog ? ", speaking: '" + o.dialog + "'" : '') + '.';
+  }
+
+  /* Bangun daftar prompt per klip untuk mode multi-shot.
+     Mengembalikan array {shotNumber, timeRange, prompt, compact}. */
+  function buildMultiShot() {
+    const st = getState();
+    const v = st.sel;
+    const mode = getShotMode();
+    const subject = st.subject.trim() || 'the main subject';
+    const env = st.environment.trim();
+    const extra = st.extra.trim();
+    const movementOpts = D().SELECTS.movement.opts;
+    const shots = [];
+    let start = 0;
+
+    for (let n = 1; n <= mode; n++) {
+      const action = shotField(n, 'action', '').trim();
+      const dialog = shotField(n, 'dialog', '').trim();
+      const mv = shotField(n, 'movement', '');
+      const movement = movementOpts.includes(mv) ? mv : v.movement;
+      const du = shotField(n, 'duration', '');
+      const duration = D().SHOT_DURATIONS.includes(du) ? du : '15s';
+      const range = start + '-' + (start + CLIP_SECONDS) + 's';
+      const args = { v, subject, action, env, extra, dialog, movement, duration };
+
+      shots.push({
+        shotNumber: n,
+        timeRange: range,
+        prompt: composePrompt({ ...args, lead: n > 1 ? CONTINUITY_CUE : '' }),
+        compact: composeCompact({ ...args, prefix: 'Shot ' + n + ' (' + range + '): ' })
+      });
+      start += CLIP_SECONDS;
+    }
+    return shots;
+  }
+
+  /* Catatan kontinuitas di bawah daftar klip untuk menyatukan video. */
+  function buildContinuityNotes(shots) {
+    const subject = getState().subject.trim() || 'the main subject';
+    const who = subject.split(',')[0].trim() || subject;
+    const L = [
+      '=== CONTINUITY NOTES ===',
+      '',
+      'Use the SAME reference image of ' + who + ' for all shots.',
+      ''
+    ];
+    for (let i = 1; i < shots.length; i++) {
+      L.push('Extract the LAST FRAME of SHOT ' + i + ' → upload as reference image for SHOT ' + (i + 1) + '.');
+      L.push('');
+    }
+    L.push('Keep character description, environment, style, lighting identical.', '');
+    L.push('Join clips in editor (CapCut) with a 0.2s cross-dissolve or hard cut.');
+    return L.join('\n');
+  }
+
   /* Susun prompt utama + versi ringkas dari state form saat ini. */
   function build() {
+    const mode = getShotMode();
+
+    if (mode > 1) {
+      const shots = buildMultiShot();
+      $('output').value =
+        shots.map((s) => '=== SHOT ' + s.shotNumber + ' (' + s.timeRange + ') ===\n' + s.prompt).join('\n\n') +
+        '\n\n' + buildContinuityNotes(shots);
+      $('compact').value = shots.map((s) => s.compact).join('\n');
+      updateCounter();
+      return;
+    }
+
     const st = getState();
     const v = st.sel;
 
@@ -93,29 +212,10 @@
     const env = st.environment.trim();
     const extra = st.extra.trim();
     const dialog = st.dialog.trim();
-    // Dialog memaksa audio "dialogue with room tone" hanya untuk output prompt;
-    // nilai audio pilihan pengguna tidak diubah di form.
-    const audio = dialog ? 'dialogue with room tone' : v.audio;
+    const args = { v, subject, action, env, extra, dialog, movement: v.movement, duration: v.duration, lead: '', prefix: '' };
 
-    const L = [];
-    L.push(cap(v.shotSize) + ' at ' + v.angle + ', shot on a ' + v.lens + '.');
-    L.push(cap(subject) + (action ? ' ' + action : '') + (env ? ', set in ' + env : '') + '.');
-    L.push('Camera: ' + v.movement + '.');
-    L.push('Lighting: ' + v.lighting + '. Color grade: ' + v.color + '. Mood: ' + v.mood + '.');
-    L.push('Style: ' + v.style + (extra ? '. Details: ' + extra : '') + '.');
-    L.push('Audio: ' + audio + '.');
-    if (dialog) L.push('Dialogue (spoken in Indonesian): "' + dialog + '"');
-    L.push('Output: ' + v.duration + ', ' + v.ratio + ', ' + v.resolution + ', ' + v.fps + '.');
-
-    $('output').value = L.join('\n');
-
-    $('compact').value =
-      cap(v.shotSize) + ' of ' + subject +
-      (action ? ', ' + action : '') +
-      (env ? ', ' + env : '') + ' — ' + v.movement +
-      ', ' + v.lighting + ', ' + v.style +
-      ', ' + v.color + ', ' + v.ratio + ' ' + v.duration +
-      (dialog ? ", speaking: '" + dialog + "'" : '') + '.';
+    $('output').value = composePrompt(args);
+    $('compact').value = composeCompact(args);
 
     updateCounter();
   }
@@ -175,6 +275,7 @@
     cap, pick,
     getState, setState, validateState,
     build, updateCounter,
+    getShotMode, buildMultiShot,
     encodeState, decodeState, buildShareUrl,
     exportPayload
   };

@@ -31,6 +31,21 @@
   /* Urutan field saat dibangun di grid dan saat state diserialisasi. */
   const ORDER = ['shotSize', 'angle', 'lens', 'movement', 'lighting', 'color', 'style', 'mood', 'audio', 'duration', 'ratio', 'resolution', 'fps'];
 
+  /* Mode pengambilan gambar: 1 = single shot (perilaku lama), 2-4 = multi-shot
+     storyboard (beberapa klip bersambung, masing-masing maksimal 15 detik). */
+  const SHOT_MODES = [
+    { value: 1, label: 'Single Shot', clipCount: 1 },
+    { value: 2, label: '2 Clips (2×15s = 30s)', clipCount: 2 },
+    { value: 3, label: '3 Clips (3×15s = 45s)', clipCount: 3 },
+    { value: 4, label: '4 Clips (4×15s = 60s)', clipCount: 4 }
+  ];
+
+  /* Jumlah maksimum klip dalam satu storyboard. */
+  const MAX_CLIPS = 4;
+
+  /* Durasi yang valid untuk tiap klip multi-shot (Seedance maks 15 detik). */
+  const SHOT_DURATIONS = ['8s', '10s', '15s'];
+
   /* Negative prompt bawaan (dipakai saat reset / load state tanpa negative). */
   const DEFAULT_NEG = 'blurry, low resolution, distorted anatomy, extra fingers, extra limbs, warped face, watermark, logo, text overlay, subtitles, jittery motion, flickering frames, oversaturated colors, plastic skin, duplicated subject';
 
@@ -65,5 +80,5 @@
   /* Batas ukuran file JSON yang diimpor (byte). */
   const IMPORT_MAX_BYTES = 200 * 1024;
 
-  window.DOLA.data = { SELECTS, ORDER, PRESETS, RAND, DEFAULT_NEG, STORAGE, HISTORY_MAX, IMPORT_MAX_BYTES };
+  window.DOLA.data = { SELECTS, ORDER, SHOT_MODES, MAX_CLIPS, SHOT_DURATIONS, PRESETS, RAND, DEFAULT_NEG, STORAGE, HISTORY_MAX, IMPORT_MAX_BYTES };
 })();
